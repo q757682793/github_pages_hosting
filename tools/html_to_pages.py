@@ -40,16 +40,13 @@ class HtmlToPagesTool(Tool):
             
             # 使用唯一ID作为文件名
             file_name = f"{unique_id}.html"
-            repository_description = "GitHub Pages hosting for user content"
-            
+
             # 获取GitHub token
             github_token = self.runtime.credentials.get("github_token")
             if not github_token:
                 yield self.create_text_message("错误：GitHub访问令牌未配置")
                 return
-            
-            yield self.create_text_message("🚀 开始处理HTML内容...")
-            
+
             # 初始化GitHub管理器
             github_manager = GitHubPagesManager(github_token)
             
@@ -58,24 +55,19 @@ class HtmlToPagesTool(Tool):
                 yield self.create_text_message("⚠️ 警告：提供的内容可能不是有效的HTML格式")
             
             # 获取用户信息
-            yield self.create_text_message("📝 获取GitHub用户信息...")
             user_info = github_manager.get_user_info()
             username = user_info["login"]
             
             # 使用用户的GitHub Pages仓库 {username}.github.io
             repository_name = f"{username}.github.io"
-            yield self.create_text_message(f"� 目标仓库: {repository_name}")
-            
+
             # 确保GitHub Pages仓库存在
-            yield self.create_text_message(f"📁 检查或创建GitHub Pages仓库...")
             repo_info = github_manager.ensure_pages_repository(username)
-            
+
             repository_url = repo_info["html_url"]
-            yield self.create_text_message(f"✅ GitHub Pages仓库已准备: {repository_url}")
-            
+
             # 上传HTML文件到GitHub Pages仓库
-            yield self.create_text_message(f"📤 上传HTML文件: {file_name}")
-            upload_result = github_manager.upload_file(
+            github_manager.upload_file(
                 owner=username,
                 repo=repository_name,
                 file_path=file_name,
@@ -83,10 +75,8 @@ class HtmlToPagesTool(Tool):
                 message=f"Add {file_name} via Dify plugin"
             )
             
-            yield self.create_text_message("✅ HTML文件上传成功")
-            
+
             # 确保GitHub Pages已启用（对于用户的GitHub Pages仓库）
-            yield self.create_text_message("🌐 确保GitHub Pages已启用...")
             try:
                 github_manager.ensure_pages_enabled(username, repository_name)
             except Exception as e:
@@ -94,17 +84,13 @@ class HtmlToPagesTool(Tool):
             
             # 构建Pages URL - 直接使用用户的GitHub Pages域名
             pages_url = f"https://{username}.github.io/{unique_id}.html"
-            
-            yield self.create_text_message("⏳ GitHub Pages部署中...")
-            
+
             # 等待部署完成（GitHub Pages仓库通常部署较快）
             deployment_success = github_manager.wait_for_pages_deployment(username, repository_name, max_wait=60)
             
             if deployment_success:
-                yield self.create_text_message("🎉 GitHub Pages部署成功！")
                 status = "deployed"
             else:
-                yield self.create_text_message("⏰ GitHub Pages正在部署中，通常几分钟内完成")
                 status = "deploying"
             
             # 返回结果
@@ -120,23 +106,7 @@ class HtmlToPagesTool(Tool):
             
             # 为工作流提供变量
             yield self.create_variable_message("pages_url", pages_url)
-            yield self.create_variable_message("repository_url", repository_url)
-            yield self.create_variable_message("unique_id", unique_id)
-            yield self.create_variable_message("status", status)
-            
-            # 用户友好的最终消息
-            yield self.create_text_message(f"""
-🌟 HTML内容已成功托管到您的GitHub Pages！
 
-� 访问地址: {pages_url}
-📁 仓库地址: {repository_url}
-📄 文件名: {file_name}
-🔖 唯一ID: {unique_id}
-📊 状态: {status}
-
-💡 提示: 内容已上传到您的 {username}.github.io 仓库，通常几分钟内即可访问。
-""")
-            
         except Exception as e:
             error_message = f"❌ 处理过程中发生错误: {str(e)}"
             yield self.create_text_message(error_message)
