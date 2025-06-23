@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: sudong
+author: q757682793
 name: github_pages_hosting
 label:
   en_US: GitHub Pages HTML Hosting
